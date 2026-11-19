@@ -47,6 +47,12 @@ The identifier `1001` fails the required canonical ProductVariant GID format. Th
 
 Correct the CSV value to `gid://shopify/ProductVariant/1001`, keeping the other settings. The corresponding local result is `ready`, with one planned operation, one batch and no validation errors. The generated operation contains `compareDigest: null`, reflecting the default `create_only` policy. That fictional ID passing a format check does not establish that it exists in any store.
 
+## Find the correct variant IDs before you run
+
+For a few rows, use [Shopify's variant ID instructions](https://help.shopify.com/en/manual/products/variants/find-variant-id). If your Shopify admin shows a separate variant URL, take the number after `/variants/`, not the product ID after `/products/`. For bulk work, follow the custom inventory report steps on that same page and export the **Product variant ID** field.
+
+Keep IDs as text so spreadsheet software does not round them or turn them into scientific notation. For a numeric variant ID, use [Shopify's ProductVariant GID format](https://help.shopify.com/en/manual/shopify-flow/reference/actions/add-order-line-item): for example, the fictional ID `1001` becomes `gid://shopify/ProductVariant/1001`. If your supplier file uses SKUs, supply an explicit `sku,variant_id` mapping CSV using exact, verified matches. Resolve ambiguous or duplicate SKUs before preparing the map. No Shopify credentials are needed by PlainByte.
+
 ## Call it through the API
 
 The same JSON works through Apify's [synchronous run-and-dataset endpoint](https://docs.apify.com/api/v2/actor-run-sync-get-dataset-items-post). With your own Apify token available as `APIFY_TOKEN`, the following command starts a billable run and returns its dataset items:
@@ -72,10 +78,10 @@ The response is a JSON array containing one report. Inspect that report's `statu
 
 An MCP-capable client can use the [Actor-specific Apify MCP connection](https://mcp.apify.com?tools=ministrant_ram/shopify-variant-metafields-planner). Configure authentication and spending authorization in the client; see [Apify's MCP documentation](https://docs.apify.com/mcp). The connection is not automatically available to every assistant, and we have not demonstrated an MCP execution for this example.
 
-A companion n8n workflow is in preparation. Its current status is local review only: no import into n8n, end-to-end n8n execution or template-catalog submission has been completed. The intended flow submits CSV input, reads the report and separates the three outcomes. It does not include a Shopify writer.
+The [companion n8n workflow](integrations/n8n/README.md) was imported locally with n8n 2.48.6 and tested against simulated responses for all three outcomes and two failure cases. It has no Shopify writer. The tests did not call the hosted Actor, and the workflow has not been submitted to the n8n template catalog.
 
 ## Price and scope
 
-Each completed report costs **USD 1**, including `blocked` and `no_changes`, plus **USD 0.00005 per Actor start** at supported memory settings. One start and one report total **USD 1.00005** in event charges; infrastructure is included. **USD 1.01 is the minimum run budget, not the price.** Re-running corrected data produces another billable report. A started run can incur its start charge without completing a report.
+Each completed report costs **USD 1**, including `blocked` and `no_changes`, plus **USD 0.00005 per Actor start** at supported memory settings. One start and one report total **USD 1.00005** in event charges; infrastructure is included. **The example sets a USD 1.01 per-run charge cap, not the price.** Re-running corrected data produces another billable report. A started run can incur its start charge without completing a report.
 
 The planner supports the `custom` namespace and six documented scalar types. It checks supplied data, not live variant existence, store permissions or metafield definitions. Keep Shopify credentials in your separate executor. Before using real data, review the [full input contract, limits and pricing](https://apify.com/ministrant_ram/shopify-variant-metafields-planner).
