@@ -15,7 +15,11 @@ This repository contains client integration examples. It does not contain or run
 
 ## Start here
 
-Before spending anything on Apify, inspect the [sample reports](integrations/n8n/sample_responses.json) to see the row diagnostics and planned GraphQL requests. If you already use n8n, read the setup guide and import the workflow JSON. Importing it does not start the Actor. Select your own Apify credential only when you intend to authorize an execution.
+If you already automate supplier catalog updates, **validate the variant metafield CSV before touching the store**. In the [free walkthrough](tutorial.md#start-with-a-deliberately-invalid-identifier), a fictional file with `1001` in row 2 is blocked. Replacing it with the full variant ID produces a proposed update, not a Shopify write. [Compare the full sample reports](integrations/n8n/sample_responses.json) without running anything.
+
+**[Validate your own file in Apify](https://apify.com/ministrant_ram/shopify-variant-metafields-planner/examples/check-shopify-variant-metafields-csv-before-an-api-update).** Viewing the example is free. Running it with your data is optional and costs USD 1 per completed report plus the start fee, through your own Apify account. No Shopify connection or credentials are needed by PlainByte.
+
+If you already use n8n, read the setup guide and import the workflow JSON. Importing it does not start the Actor. Select your own Apify credential only when you intend to authorize an execution.
 
 If you use another API client, follow the tutorial with `input.json`. Replace fictional data before practical use. The Actor identifier is:
 
