@@ -1,0 +1,15 @@
+{
+  "csv_text": "variant_id,description\ngid://shopify/ProductVariant/1001,Machine washable\n",
+  "fields": [
+    {
+      "column": "description",
+      "namespace": "custom",
+      "key": "care_instructions",
+      "type": "multi_line_text_field"
+    }
+  ],
+  "identifier_mode": "variant_id",
+  "identifier_column": "variant_id",
+  "write_policy": "create_only",
+  "delimiter": ","
+}
