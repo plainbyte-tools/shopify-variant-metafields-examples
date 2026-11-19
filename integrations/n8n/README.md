@@ -50,7 +50,9 @@ The workflow's JSON, node configuration and JavaScript were checked locally on *
 node integrations/n8n/verify_workflow.mjs
 ```
 
-**This template has not been imported into a live n8n instance or executed against Apify as an end-to-end integration.** Local checks establish the behavior of its JavaScript and configuration; they do not certify compatibility with every n8n installation. Node versions used are Manual Trigger 1, Code 2 and HTTP Request 4.2. No paid request, store access or Shopify write was performed while preparing these files.
+The original workflow imported through the CLI into a local n8n 2.48.6 instance with four nodes and remained inactive. In test copies, a local HTTP mock returned `ready`, `blocked`, `no_changes`, malformed data, and HTTP 500. The first three produced the expected next actions and did not authorize Shopify writes. The final inspector rejected malformed data, and the HTTP node stopped on HTTP 500. No retries were observed.
+
+This checks workflow import and behavior under simulated responses, not a live Apify integration. Apify credentials, the deployed Actor response, and GUI import were not tested. No paid request, live store access or Shopify write was performed.
 
 ## Official references
 

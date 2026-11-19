@@ -15,7 +15,7 @@ This repository contains client integration examples. It does not contain or run
 
 ## Start here
 
-If you already use n8n, read the setup guide and import the workflow JSON. Importing it does not start the Actor. Select your own Apify credential only when you intend to authorize an execution.
+Before spending anything on Apify, inspect the [sample reports](integrations/n8n/sample_responses.json) to see the row diagnostics and planned GraphQL requests. If you already use n8n, read the setup guide and import the workflow JSON. Importing it does not start the Actor. Select your own Apify credential only when you intend to authorize an execution.
 
 If you use another API client, follow the tutorial with `input.json`. Replace fictional data before practical use. The Actor identifier is:
 
@@ -41,6 +41,6 @@ The configuration, input expression and JavaScript report handler passed local c
 node integrations/n8n/verify_workflow.mjs
 ```
 
-**No live n8n import or end-to-end n8n execution has been verified.** The workflow has not been submitted to the n8n template catalog. The example outputs are local observations, not customer transactions or proof of Shopify accepting an import.
+The published workflow imported successfully through the CLI in a local n8n 2.48.6 instance. With the HTTP node pointed at a local mock, the n8n engine handled `ready`, `blocked`, and `no_changes` and stopped on malformed data or HTTP 500. All three valid reports retained `shopify_write_authorized: false`. The test did not authenticate with Apify, run the hosted Actor, or contact Shopify. The workflow has not been submitted to the n8n template catalog.
 
 Prepared with AI assistance. PlainByte Tools develops and monetizes the linked Actor. This is an independent project, with no endorsement by Shopify, Apify or n8n.
