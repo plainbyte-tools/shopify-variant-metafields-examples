@@ -1,0 +1,158 @@
+{
+  "name": "Validate Shopify variant metafields CSV with PlainByte Tools",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "1cf3232d-607b-483f-a9e7-7732a17db459",
+      "name": "Start manually",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "notes": "Manual execution only. Importing the workflow does not run the paid Actor.",
+      "notesInFlow": true
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "language": "javaScript",
+        "jsCode": "// Fictional sample. Replace the CSV and field mappings before practical use.\n// This code creates one input item; it does not contact any service.\nreturn [{ json: {\n  \"csv_text\": \"variant_id,description\\ngid://shopify/ProductVariant/1001,Machine washable\\n\",\n  \"fields\": [\n    {\n      \"column\": \"description\",\n      \"namespace\": \"custom\",\n      \"key\": \"care_instructions\",\n      \"type\": \"multi_line_text_field\"\n    }\n  ],\n  \"identifier_mode\": \"variant_id\",\n  \"identifier_column\": \"variant_id\",\n  \"write_policy\": \"create_only\",\n  \"delimiter\": \",\"\n} }];"
+      },
+      "id": "91aa34f2-00ee-42cc-b26c-753ee5935a62",
+      "name": "Edit CSV and mappings",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        260,
+        0
+      ],
+      "notes": "One fictional variant. Replace csv_text and fields with your authorized input. No Shopify token is needed.",
+      "notesInFlow": true
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.apify.com/v2/actors/ministrant_ram~shopify-variant-metafields-planner/run-sync-get-dataset-items",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "maxTotalChargeUsd",
+              "value": "1.01"
+            },
+            {
+              "name": "memory",
+              "value": "256"
+            },
+            {
+              "name": "timeout",
+              "value": "60"
+            },
+            {
+              "name": "restartOnError",
+              "value": "false"
+            },
+            {
+              "name": "format",
+              "value": "json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "json",
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json) }}",
+        "options": {
+          "timeout": 90000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "json",
+              "fullResponse": true,
+              "neverError": false
+            }
+          }
+        }
+      },
+      "id": "c22fe5d8-ac44-447a-b1fa-b03c54ebd30c",
+      "name": "Validate with Apify - paid",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        520,
+        0
+      ],
+      "retryOnFail": false,
+      "onError": "stopWorkflow",
+      "notes": "Select a Header Auth credential: Authorization = Bearer <your Apify token>. USD 1 per completed report (including blocked/no_changes) + USD 0.00005 per start. Cap USD 1.01 per request. Do not retry blindly after a timeout.",
+      "notesInFlow": true
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "language": "javaScript",
+        "jsCode": "// Inspect the completed report; HTTP success alone is not validation success.\nconst items = $input.all();\nif (items.length !== 1) throw new Error('Expected one HTTP response.');\nconst response = items[0].json;\nif (!Number.isInteger(response.statusCode) || response.statusCode < 200 || response.statusCode >= 300) {\n  throw new Error('The Apify request did not return a successful HTTP status.');\n}\nif (!Array.isArray(response.body) || response.body.length !== 1) {\n  throw new Error('Expected exactly one complete report. Check the Apify run before retrying.');\n}\nconst report = response.body[0];\nif (!report || report.schema_version !== '1.0' || !['ready', 'blocked', 'no_changes'].includes(report.status)\n    || !Array.isArray(report.issues) || !Array.isArray(report.batches) || !report.summary\n    || report.remote_requests !== 0 || report.definition_constraints_verified !== false) {\n  throw new Error('Unexpected planner report. Review the run manually.');\n}\nconst counts = report.summary;\nfor (const key of ['planned_operations', 'batch_count', 'error_count']) {\n  if (!Number.isInteger(counts[key]) || counts[key] < 0) throw new Error('Invalid report counters.');\n}\nif (counts.batch_count !== report.batches.length) throw new Error('Inconsistent batch count.');\nif (report.status === 'ready') {\n  if (counts.error_count !== 0 || counts.planned_operations < 1 || report.batches.length < 1) {\n    throw new Error('The ready report is inconsistent. Do not use its requests.');\n  }\n  let operations = 0;\n  for (const batch of report.batches) {\n    const request = batch && batch.request;\n    const metafields = request && request.variables && request.variables.metafields;\n    if (!request || typeof request.query !== 'string' || request.query.length === 0\n        || !Array.isArray(metafields) || metafields.length < 1 || metafields.length > 25) {\n      throw new Error('Invalid request batch. Do not use its requests.');\n    }\n    operations += metafields.length;\n  }\n  if (operations !== counts.planned_operations) throw new Error('Inconsistent operation count.');\n} else {\n  if (report.batches.length !== 0 || counts.planned_operations !== 0\n      || (report.status === 'blocked' && counts.error_count < 1)\n      || (report.status === 'no_changes' && counts.error_count !== 0)) {\n    throw new Error('A non-ready report contains inconsistent results. Do not use its requests.');\n  }\n}\nreturn [{ json: {\n  ...report,\n  next_action: report.status === 'ready' ? 'review_requests' : report.status === 'blocked' ? 'correct_input' : 'nothing_to_apply',\n  shopify_write_authorized: false\n} }];"
+      },
+      "id": "14411c38-a23a-4ca2-9862-6a640b3fdc9b",
+      "name": "Inspect status and requests",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        780,
+        0
+      ],
+      "onError": "stopWorkflow",
+      "notes": "The final output is a planning report. ready requires separate review and Shopify authorization; blocked/no_changes have no requests. No Shopify writes are performed.",
+      "notesInFlow": true
+    }
+  ],
+  "connections": {
+    "Start manually": {
+      "main": [
+        [
+          {
+            "node": "Edit CSV and mappings",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit CSV and mappings": {
+      "main": [
+        [
+          {
+            "node": "Validate with Apify - paid",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate with Apify - paid": {
+      "main": [
+        [
+          {
+            "node": "Inspect status and requests",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {},
+  "tags": []
+}
